@@ -5,6 +5,7 @@ This module runs ravelry_client.py to collect data and stores it as csv
 import argparse
 import os
 import logging
+import time
 
 import pandas as pd
 
@@ -18,24 +19,33 @@ logger = logging.getLogger(__name__)
 
 def collect_patterns(pages=100):
     """
-    This function collects ravelry patterns
+    This function collects ravelry pattern details
 
     Args:
         pages (int): number of pages to collect
 
     Returns:
-        list: list of patterns collected
+        list: list of pattern details collected
     """
     patterns = []
+    pattern_details = []
     client = RavelryClient()
     logger.info("Starting data collection for %d pages", pages)
 
     for page in range(1, pages + 1):
         logger.info("Fetching data for page: %d", page)
         patterns.extend(client.search_patterns(page=page)["patterns"])
+        time.sleep(0.5)
 
-    logger.info("Collected %d patterns", len(patterns))
-    return patterns
+    for pattern in patterns:
+        time.sleep(1)
+        try:
+            pattern_details.append(client.get_pattern(pattern_id=pattern["id"]))
+        except Exception as e:
+            logger.error("Failed to fetch pattern %d: %s", pattern["id"], e)
+
+    logger.info("Collected %d patterns", len(pattern_details))
+    return pattern_details
 
 
 def save_patterns(patterns, output_path="data/raw/patterns_raw.csv"):
